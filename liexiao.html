@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>UTF-8 猎枭秒杀箭</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        /* 基础样式 */
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0;
+            padding:0;
+            background: url('./images/背景图.jpg') no-repeat center center fixed;
+            background-size: cover;
+            position: relative;
+
+        }
+        .gallery { display: none; }
+        .active { display: block; }
+
+        /* 媒体容器样式 */
+        .media-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            grid-auto-flow: row;
+            grid-template-rows: repeat(auto-fill, 3); /* 每行显示 3 张图片 */
+            gap: 15px;
+            padding: 20px;
+        }
+
+        /* 遮罩层样式 */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(119, 111, 111, 0.5); /* 黑色遮罩，透明度为 0.5 */
+            z-index: -1; /* 确保遮罩在内容之下 */
+        }
+        
+        /* 分类导航样式 */
+        .category-nav {
+            display: flex;
+            justify-content: space-between; /* 按钮之间平均分配空间 */
+            align-items: center;            /* 垂直居中 */
+            margin: 0 auto 20px auto;
+            max-width: 960px;               /* 可选：限制最大宽度，适配屏幕 */
+            padding: 0 20px;
+        }
+
+        /* 如果你希望按钮自动伸展填满整个区域，可添加以下样式 */
+        .tab-button {
+            flex: 1;
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 10px;
+            background: #2bb930;
+            color: white;
+            cursor: pointer;
+            text-align: center;
+            margin:  px; /* 控制按钮之间的间距 */
+        }
+        
+        /* 添加媒体查询 */
+            @media (max-width: 600px) {
+        .category-nav {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .tab-button {
+            margin: 5px 0;
+        }
+    }
+
+        /* 标题样式 */
+        #pageTitle {
+            text-align: center;
+            margin: 0 auto 20px auto;
+            font-size: 48px;
+            color: #ffffff;
+            padding: 10px 20px;
+            border-radius: 12px;
+            width: max-content;
+            display: block;
+        }
+
+
+        /* 缩略图容器 */
+        .media-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 20px;
+        }
+
+        /* 纵向分组 + 竖线分割 */
+        .media-container .group { 
+            display: flex;
+            flex-direction: column; /* 纵向排列 */
+            align-items: stretch; /* 让图片高度一致 */
+            gap: 25px;
+            position: relative; /* 为伪元素定位准备 */
+        }
+
+        /* 小屏幕下改为横向排列，并去掉竖线 */
+        @media (max-width: 768px) {
+            .media-container .group {
+                flex:  0 0 auto;    /* 横向排列 */
+                height: auto;
+            }
+
+            .media-container .group:not(:last-child)::after {
+                display: none;
+            }
+        }
+
+        /* 更小屏幕适配按钮和分类 */
+        @media (max-width: 600px) {
+            .category-nav,
+            .subcategory-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .tab-button,
+            .subcategory {
+                width: 100%;
+                text-align: center;
+                margin: 5px 0;
+            }
+        }
+
+        /* 竖分割线样式 */
+        .media-container .group:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left:103%;
+            transform: translateX(-50%);
+            width: 6px;
+            background-image: radial-gradient(#ff4d4d 40%, transparent 41%);
+            background-size: 6px 20px;
+            background-repeat: repeat-y;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* 缩略图样式 */
+        .thumbnail {
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.3s;
+            border-radius: 15px;
+            overflow: hidden;
+            background: rgb(255, 255, 255);
+            box-shadow: 0 10px 5px rgba(0,0,0,0.2);
+        }
+        .thumbnail:hover {
+            transform: scale(1.06);
+        }
+        .thumbnail img {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        /* 大图模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 999;
+        }
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            max-width: 90%;
+            max-height: 90%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: white;
+            font-size: 40px;
+            cursor: pointer;
+        }
+        .modal-description {
+            color: white;
+            font-size: 18px;
+            text-align: center;
+            margin-top: 10px;
+            max-width: 80%;
+        }
+
+
+        /* 缩略图下方的文本框 */
+        .thumbnail-text {
+            text-align: center;
+            margin-top: 5px;
+            background: rgba(255,255,255,0.8);
+            border-radius: 4px;
+            padding: 5px;
+        }
+
+        /* 视频特殊处理 */
+        .thumbnail video {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+        }
+
+        /* 二级分类容器 */
+        .subcategory-container {
+            display: flex;
+            gap: 10px;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.8);
+            border-radius: 8px;
+            margin: 10px 20px;
+        }
+
+        /* 二级分类按钮 */
+        .subcategory {
+            padding: 8px 16px;
+            background: #4CAF50;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .subcategory:hover {
+            background: #45a049;
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="overlay"></div>
+    <h1 id="pageTitle">猎枭秒杀箭</h1>
+
+    <!-- 分类导航 -->
+     <div class="category-nav"> 
+    <button class="tab-button" onclick="showCategory('Yin')">隐世修所</button>
+    <button class="tab-button" onclick="showCategory('Ya')">亚海悬城</button>
+    <button class="tab-button" onclick="showCategory('Lian')">莲花古城</button>
+    <button class="tab-button" onclick="showCategory('Gang')">森寒冬港</button>
+    </div>
+
+    <!-- 模态框 -->
+    <div class="modal" onclick="closeModal()">
+        <span class="modal-close">&times;</span>
+        <div class="modal-content">
+            <img id="expandedImg" style="max-width: 100%; height: auto;">
+            <div class="modal-description" id="expandedImgDesc"></div>
+        </div>
+        <video class="modal-content" id="expandedVideo" controls style="display: none;"></video>
+    </div>
+
+    <!-- 隐士修所 -->
+    <div id="Yin" class="gallery active">
+        <div class="subcategory-container">
+            <div class="subcategory" onclick="showSubcategory('Yin-a')">A大进攻</div>
+            <div class="subcategory" onclick="showSubcategory('Yin-c')">C大进攻</div>
+            <div class="subcategory" onclick="showSubcategory('Yin-af')">A点防守</div>
+        </div>
+        <div id="Yin-a" class="media-container">
+            <!-- A包箱后 -->
+            <div class="thumbnail" onclick="showMedia('./images/A包箱后秒杀站位.jpg', 'image', )">
+                <img src="./images/A包箱后秒杀站位.jpg" loading="lazy">
+                <div class="thumbnail-text">A包箱后秒杀站位</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A包箱后-蹲下两格.jpg', 'image', )">
+                <img src="./images/A包箱后-蹲下两格.jpg" loading="lazy">
+                <div class="thumbnail-text">A包箱后-蹲下两格</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A包箱后-站立一格.png', 'image', )">
+                <img src="./images/A包箱后-站立一格.png" loading="lazy">
+                <div class="thumbnail-text">A包箱后-站立一格</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A包箱后效果.jpg', 'image', )">
+                <img src="./images/A包箱后效果.jpg" loading="lazy">
+                <div class="thumbnail-text">A包箱后效果</div>
+            </div>
+            <!-- A小老六位秒杀 -->
+            <div class="thumbnail" onclick="showMedia('./images/A小老六位秒杀站位.jpg', 'image', )">
+                <img src="./images/A小老六位秒杀站位.jpg" loading="lazy">
+                <div class="thumbnail-text">A小老六位秒杀站位</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A小老六位-两格蓄力.jpg', 'image', )">
+                <img src="./images/A小老六位-两格蓄力.jpg" loading="lazy">
+                <div class="thumbnail-text">A小老六位-两格蓄力</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A小老六位-一格蓄力.jpg', 'image', )">
+                <img src="./images/A小老六位-一格蓄力.jpg" loading="lazy">
+                <div class="thumbnail-text">A小老六位-一格蓄力</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A小老六位效果.jpg', 'image', )">
+                <img src="./images/A小老六位效果.jpg" loading="lazy">
+                <div class="thumbnail-text">A小老六位效果</div>
+            </div>
+        </div>
+        <div id="Yin-c" class="media-container" style="display:none">
+            <!-- C包箱后秒杀 -->
+            <div class="thumbnail" onclick="showMedia('./images/C包秒杀站位.jpg', 'image', )">
+                <img src="./images/C包秒杀站位.jpg" loading="lazy">
+                <div class="thumbnail-text">C包秒杀站位</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/C包死点两格.jpg', 'image', )">
+                <img src="./images/C包死点两格.jpg" loading="lazy">
+                <div class="thumbnail-text">C包死点两格</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/C包死点一格.jpg', 'image', )">
+                <img src="./images/C包死点一格.jpg" loading="lazy">
+                <div class="thumbnail-text">C包死点一格</div>
+                <div class="thumbnail" onclick="showMedia('./images/C包死点效果.jpg', 'image', )">
+                    <img src="./images/C包死点效果.jpg" loading="lazy">
+                    <div class="thumbnail-text">C包死点效果</div>
+                </div>
+            </div>
+            <!-- C包死点秒杀 -->
+            <div class="thumbnail" onclick="showMedia('./images/C包秒杀站位.jpg', 'image', )">
+                <img src="./images/C包秒杀站位.jpg" loading="lazy">
+                <div class="thumbnail-text">C包秒杀站位</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/C包箱后两格.jpg', 'image', )">
+                <img src="./images/C包箱后两格.jpg" loading="lazy">
+                <div class="thumbnail-text">C包箱后两格</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/C包箱后一格.jpg', 'image', )">
+                <img src="./images/C包箱后一格.jpg" loading="lazy">
+                <div class="thumbnail-text">C包箱后一格</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/C包箱后效果.jpg', 'image', )">
+                <img src="./images/C包箱后效果.jpg" loading="lazy">
+                <div class="thumbnail-text">C包箱后效果</div>
+            </div>
+        </div>
+        <div id="Yin-af" class="media-container">
+            <!-- A点防下包 -->
+            <div class="thumbnail" onclick="showMedia('./images/A点防下包站位.jpg', 'image', )">
+                <img src="./images/A点防下包站位.jpg" loading="lazy">
+                <div class="thumbnail-text">A点防下包站位</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A点防下包-一格蓄力.jpg', 'image', )">
+                <img src="./images/A点防下包-一格蓄力.jpg" loading="lazy">
+                <div class="thumbnail-text">A点防下包-一格蓄力</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A点防下包-直接发射.jpg', 'image', )">
+                <img src="./images/A点防下包-直接发射.jpg" loading="lazy">
+                <div class="thumbnail-text">A点防下包-直接发射</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A点防下包效果.jpg', 'image', )">
+                <img src="./images/A点防下包效果.jpg" loading="lazy">
+                <div class="thumbnail-text">A点防下包效果</div>
+            </div>
+            <!-- A外死点 -->
+            <div class="thumbnail" onclick="showMedia('./images/A外死点秒杀站位.jpg', 'image', )">
+                <img src="./images/A外死点秒杀站位.jpg" loading="lazy">
+                <div class="thumbnail-text">A外死点秒杀站位</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A外死点-两格蓄力.jpg', 'image', )">
+                <img src="./images/A外死点-两格蓄力.jpg" loading="lazy">
+                <div class="thumbnail-text">A外死点-两格蓄力</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A外死点-一格蓄力.jpg', 'image', )">
+                <img src="./images/A外死点-一格蓄力.jpg" loading="lazy">
+                <div class="thumbnail-text">A外死点-一格蓄力</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A外死点效果.jpg', 'image', )">
+                <img src="./images/A外死点效果.jpg" loading="lazy">
+                <div class="thumbnail-text">A外死点效果</div>
+            </div>
+            <!-- A门秒杀 -->
+            <div class="thumbnail" onclick="showMedia('./images/A门秒杀站位-Yin.jpg', 'image', )">
+                <img src="./images/A门秒杀站位-Yin.jpg" loading="lazy">
+                <div class="thumbnail-text">A门秒杀站位</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A门秒杀-一格蓄力.jpg.jpg', 'image', )">
+                <img src="./images/A门秒杀-一格蓄力.jpg" loading="lazy">
+                <div class="thumbnail-text">A门秒杀-一格蓄力</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A门秒杀-一格反弹满格蓄力.jpg', 'image', )">
+                <img src="./images/A门秒杀-一格反弹满格蓄力.jpg" loading="lazy">
+                <div class="thumbnail-text">A门秒杀-一格反弹满格蓄力</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A门效果-Yin.jpg', 'image', )">
+                <img src="./images/A门效果-Yin.jpg" loading="lazy">
+                <div class="thumbnail-text">A门效果</div>
+            </div>
+        </div>
+    </div>
+    
+
+    <!--亚海悬城 -->
+    <div id="Ya" class="gallery active">
+        <div class="subcategory-container">
+            <div class="subcategory" onclick="showSubcategory('A小')">进攻-A小</div>
+            <div class="subcategory" onclick="showSubcategory('A大')">防守-A大</div>
+            <div class="subcategory" onclick="showSubcategory('B包')">防守-B包</div>
+        </div>
+        <div id="A小" class="media-container">
+            <!-- A小秒杀1 -->
+            <div class="thumbnail" onclick="showMedia('./images/A小秒杀站位-1.jpg', 'image', )">
+                <img src="./images/A小秒杀站位-1.jpg" loading="lazy">
+                <div class="thumbnail-text">A小秒杀站位-1</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A小1-两格蓄力.jpg', 'image', )">
+                <img src="./images/A小1-两格蓄力.jpg" loading="lazy">
+                <div class="thumbnail-text">A小1-两格蓄力</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A小1-一格蓄力.jpg', 'image', )">
+                <img src="./images/A小1-一格蓄力.jpg" loading="lazy">
+                <div class="thumbnail-text">A小1-一格蓄力</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A小1效果.jpg', 'image', )">
+                <img src="./images/A小1效果.jpg" loading="lazy">
+                <div class="thumbnail-text">A小1效果</div>
+            </div>
+            <!-- A小秒杀2 -->
+            <div class="thumbnail" onclick="showMedia('./images/A小秒杀站位-2.jpg', 'image', )">
+                <img src="./images/A小秒杀站位-2.jpg" loading="lazy">
+                <div class="thumbnail-text">A小秒杀站位-2</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A小2-两格蓄力.jpg', 'image', )">
+                <img src="./images/A小2-两格蓄力.jpg" loading="lazy">
+                <div class="thumbnail-text">A小2-两格蓄力</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A小2-反弹一格蓄力一格.jpg', 'image', )">
+                <img src="./images/A小2-反弹一格蓄力一格.jpg" loading="lazy">
+                <div class="thumbnail-text">A小2-反弹一格蓄力一格</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A小2效果.jpg', 'image', )">
+                <img src="./images/A小2效果.jpg" loading="lazy">
+                <div class="thumbnail-text">A小2效果</div>
+            </div>
+        </div>
+        <div id="A大" class="media-container">
+            <!-- A大秒杀1 -->
+            <div class="thumbnail" onclick="showMedia('./images/A大秒杀站位.jpg', 'image', )">
+                <img src="./images/A大秒杀站位.jpg" loading="lazy">
+                <div class="thumbnail-text">A大秒杀站位</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A大1-一格蓄力.jpg', 'image', )">
+                <img src="./images/A大1-一格蓄力.jpg" loading="lazy">
+                <div class="thumbnail-text">A大1-一格蓄力</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A大1-两格反弹两格蓄力.jpg', 'image', )">
+                <img src="./images/A大1-两格反弹两格蓄力.jpg" loading="lazy">
+                <div class="thumbnail-text">A大1-两格反弹两格蓄力</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A大1效果.jpg', 'image', )">
+                <img src="./images/A大1效果.jpg" loading="lazy">
+                <div class="thumbnail-text">A大1效果</div>
+            </div>
+            <!-- A门秒杀 -->
+            <div class="thumbnail" onclick="showMedia('./images/A门秒杀站位.jpg', 'image', )">
+                <img src="./images/A门秒杀站位.jpg" loading="lazy">
+                <div class="thumbnail-text">A门秒杀站位</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A门-一格蓄力.jpg', 'image', )">
+                <img src="./images/A门-一格蓄力.jpg" loading="lazy">
+                <div class="thumbnail-text">A门-一格蓄力</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A门-直接发射.jpg', 'image', )">
+                <img src="./images/A门-直接发射.jpg" loading="lazy">
+                <div class="thumbnail-text">A门-直接发射</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A门效果.jpg', 'image', )">
+                <img src="./images/A门效果.jpg" loading="lazy">
+                <div class="thumbnail-text">A门效果</div>
+            </div>
+            <!-- A球秒杀 -->
+            <div class="thumbnail" onclick="showMedia('./images/A球秒杀站位.jpg', 'image', )">
+                <img src="./images/A球秒杀站位.jpg" loading="lazy">
+                <div class="thumbnail-text">A球秒杀站位</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A球-两格蓄力.jpg', 'image', )">
+                <img src="./images/A球-两格蓄力.jpg" loading="lazy">
+                <div class="thumbnail-text">A球-两格蓄力</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A球-一格蓄力.jpg', 'image', )">
+                <img src="./images/A球-一格蓄力.jpg" loading="lazy">
+                <div class="thumbnail-text">A球-一格蓄力</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/A球效果.jpg', 'image', )">
+                <img src="./images/A球效果.jpg" loading="lazy">
+                <div class="thumbnail-text">A球效果</div>
+            </div>
+        </div>
+        <div id="B包" class="media-container">
+                <!-- B小秒杀1 -->
+                <div class="thumbnail" onclick="showMedia('./images/B小秒杀1站位.jpg', 'image', )">
+                    <img src="./images/B小秒杀1站位.jpg" loading="lazy">
+                    <div class="thumbnail-text">B小秒杀1站位</div>
+                </div>0
+                <div class="thumbnail" onclick="showMedia('./images/B小秒杀1-两格蓄力.jpg', 'image', )">
+                    <img src="./images/B小秒杀1-两格蓄力.jpg" loading="lazy">
+                    <div class="thumbnail-text">B小秒杀1-两格蓄力.jpg</div>
+                </div>
+                <div class="thumbnail" onclick="showMedia('./images/B小秒杀1-一格蓄力.jpg', 'image', )">
+                    <img src="./images/B小秒杀1-一格蓄力.jpg" loading="lazy">
+                    <div class="thumbnail-text">B小秒杀1-一格蓄力</div>
+                </div>
+                <div class="thumbnail" onclick="showMedia('./images/B小秒杀1效果.jpg', 'image', )">
+                    <img src="./images/B小秒杀1效果.jpg" loading="lazy">
+                    <div class="thumbnail-text">B小秒杀1效果</div>
+                </div>
+                <!-- B大秒杀 -->
+                <div class="thumbnail" onclick="showMedia('./images/B大秒杀站位-Ya.jpg', 'image', )">
+                    <img src="./images/B大秒杀站位-Ya.jpg" loading="lazy">
+                    <div class="thumbnail-text">B大秒杀站位</div>
+                </div>0
+                <div class="thumbnail" onclick="showMedia('./images/B大-两格反弹满格蓄力-Ya.jpg', 'image', )">
+                    <img src="./images/B大-两格反弹满格蓄力-Ya.jpg" loading="lazy">
+                    <div class="thumbnail-text">B大-两格反弹满格蓄力</div>
+                </div>
+                <div class="thumbnail" onclick="showMedia('./images/B大-直接发射-Ya.jpg', 'image', )">
+                    <img src="./images/B大-直接发射-Ya.jpg" loading="lazy">
+                    <div class="thumbnail-text">B大-直接发射</div>
+                </div>
+                <div class="thumbnail" onclick="showMedia('./images/B大效果-Ya.jpg', 'image', )">
+                    <img src="./images/B大效果-Ya.jpg" loading="lazy">
+                    <div class="thumbnail-text">B大效果</div>
+                </div>
+        </div>
+    </div>
+
+    <!-- 生活视频区 -->
+    <div id="Lian" class="gallery">
+        <div class="media-container">
+            <div class="thumbnail" onclick="showMedia('./videos/生活记录/生日派对.mp4', 'video', '这是我的生日派对视频，非常热闹。')">
+                <video> poster="./videos/生活记录/生日派对-preview.jpg">
+                    <source src="./videos/生活记录/生日派对.mp4" type="video/mp4">
+                </video>
+                <div class="thumbnail-text">生日派对</div>
+                <div class="thumbnail" onclick="showMedia('./videos/生活记录/滑雪.mp4', 'video', '这是我在滑雪场的视频，非常刺激。')">
+                    <video poster = "./videos/生活记录/滑雪-preview.jpg">
+                        <source src="./videos/生活记录/滑雪.mp4" type="video/mp4">
+                    </video>
+                    <div class="thumbnail-text">雪山滑雪</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 森寒冬港 -->
+    <div id="Gang" class="gallery">
+        <div class="subcategory-container">
+            <div class="subcategory" onclick="showSubcategory('Gang-a')">中路</div>
+        </div>
+        <div id="Gang-a" class="media-container">
+            <div class="thumbnail" onclick="showMedia('./images/中路小鸡秒杀箭站位.jpg', 'image', )">
+                <img src="./images/中路小鸡秒杀箭站位.jpg" loading="lazy">
+                <div class="thumbnail-text">中路小鸡秒杀箭站位</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/两格蓄力直接发射.jpg', 'image', )">
+                <img src="./images/两格蓄力直接发射.jpg" loading="lazy">
+                <div class="thumbnail-text">秒杀小鸡两格蓄力直接发射</div>
+            </div>
+            <div class="thumbnail" onclick="showMedia('./images/一格蓄力直接发射.jpg', 'image', )">
+                <img src="./images/一格蓄力直接发射.jpg" loading="lazy">
+                <div class="thumbnail-text">秒杀小鸡一格蓄力直接发射</div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <script>
+        // 分类切换功能
+        function showCategory(categoryId) {
+            document.querySelectorAll('.gallery').forEach(div => {
+                div.classList.remove('active');
+            });
+            // 显示当前 gallery
+            const currentGallery = document.getElementById(categoryId);
+            currentGallery.classList.add('active');
+
+            // 查找当前分类下的第一个二级分类容器
+            const subcategoryContainers = currentGallery.querySelectorAll('.media-container');
+            if (subcategoryContainers.length > 0) {
+            // 隐藏所有 media-container
+            subcategoryContainers.forEach(container => {
+                container.style.display = 'none';
+            });
+
+            // 显示第一个 media-container，并分组缩略图
+            const firstContainer = subcategoryContainers[0];
+            firstContainer.style.display = 'grid';
+
+            // 触发分组逻辑
+            groupThumbnails(firstContainer);
+    }
+        }
+
+        // 显示大图/视频
+        function showMedia(src, type, description) {
+            const modal = document.querySelector('.modal');
+            const img = document.getElementById('expandedImg');
+            const video = document.getElementById('expandedVideo');
+            const descriptionElement = document.getElementById('expandedImgDesc');
+            
+            if(type === 'image') {
+                img.style.display = 'block';
+                video.style.display = 'none';
+                img.src = src;
+                descriptionElement.textContent = description;
+                img.style.transform = 'scale(1.5)'; // 初始化缩放比例
+                img.style.transition = 'transform 0.3s ease';
+
+                // 添加鼠标滚轮事件
+                img.addEventListener('wheel', handleZoom);
+            } else {
+                video.style.display = 'block';
+                img.style.display = 'none';
+                video.src = src;
+                video.play();
+                descriptionElement.textContent = description;
+            }
+
+            modal.style.display = 'block';
+        }
+
+        // 鼠标滚轮放大缩小
+        function handleZoom(event) {
+            event.preventDefault();
+            const img = document.getElementById('expandedImg');
+            const scale = parseFloat(img.style.transform.replace('scale(', '').replace(')', ''));
+            const delta = event.deltaY < 0 ? 0.1 : -0.1; // 向下滚动缩小，向上滚动放大
+            const newScale = Math.max(0.8, scale + delta); // 设置最小缩放比例为 0.85，避免图片过小消失
+            img.style.transform = `scale(${newScale})`;
+        }
+
+        // 关闭模态框
+        function closeModal() {
+            const modal = document.querySelector('.modal');
+            const img = document.getElementById('expandedImg');
+            const video = document.getElementById('expandedVideo');
+
+            // 移除鼠标滚轮事件
+            img.removeEventListener('wheel', handleZoom);
+
+            modal.style.display = 'none';
+            video.pause();
+            img.style.transform = 'scale(1)'; // 重置缩放比例 
+        }
+
+        // ESC键关闭
+        document.addEventListener('keydown', (e) => {
+            if(e.key === 'Escape') closeModal();
+        });
+
+        // 恢复所有分类和二级分类的显示
+        function restoreContent() {
+            document.querySelectorAll('.gallery').forEach(gallery => {
+                gallery.classList.remove('active');
+                // 默认显示第一个分类
+                if (gallery.id === 'Yin') {
+                    gallery.classList.add('active');
+                }
+            });
+
+            document.querySelectorAll('.media-container').forEach(container => {
+                container.style.display = 'grid';
+            });
+        }
+
+
+        // 二级分类切换功能
+        function showSubcategory(subcategoryId) {
+            const activeGallery = document.querySelector('.gallery.active');
+            if (!activeGallery) return;
+
+            const containers = activeGallery.querySelectorAll('.media-container');
+            containers.forEach(div => {
+                div.style.display = 'none';
+            });
+
+            const targetContainer = document.getElementById(subcategoryId);
+            targetContainer.style.display = 'grid';
+
+            // 添加这行：触发缩略图分组逻辑
+            groupThumbnails(targetContainer);
+        }
+
+        // 缩略图分组功能
+        function groupThumbnails(container) {
+            const thumbnails = Array.from(container.querySelectorAll('.thumbnail'));
+            container.innerHTML = ''; // 清空当前内容
+
+            for (let i = 0; i < thumbnails.length; i += 4) {
+                const group = document.createElement('div');
+                group.className = 'group';
+                group.append(...thumbnails.slice(i, i + 4));
+                container.appendChild(group);
+            }
+        }
+
+        // 在切换二级分类后调用此函数
+        function showSubcategory(subcategoryId) {
+            const activeGallery = document.querySelector('.gallery.active');
+            if (!activeGallery) return;
+
+            const containers = activeGallery.querySelectorAll('.media-container');
+            containers.forEach(div => {
+                div.style.display = 'none';
+            });
+
+            const targetContainer = document.getElementById(subcategoryId);
+            targetContainer.style.display = 'grid';
+            
+            // 每次切换时重新分组
+            groupThumbnails(targetContainer);
+        }
+
+        // 初始化时显示第一个分类
+        window.onload = function () {
+            const firstCategoryId = 'Yin'; // 默认主分类 ID
+            showCategory(firstCategoryId);
+        };
+
+    </script>
+</body>
+</html>
